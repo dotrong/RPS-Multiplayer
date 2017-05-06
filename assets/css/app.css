@@ -44,3 +44,8 @@ body {
 
 	margin-top: 20px;
 }
+
+.selected {
+
+	background-color: lightblue;
+}

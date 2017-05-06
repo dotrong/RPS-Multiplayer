@@ -28,11 +28,15 @@ var userNode;
 
 var userName;
 
+var opponentName;
+
+var selection = [];
+
+var userSelected = false;
+
 dbPlayerRef.on("child_added", function(snapshot) {
 
 	var userObject = snapshot.val();
-
-	//if (($('#player1').html().trim() == "") && ($('#player2').html().trim() == "")) {
 
 	if (userObject.userId == userId) {
 
@@ -61,6 +65,8 @@ dbPlayerRef.on("child_added", function(snapshot) {
 		var p = $('<p>');
 		p.text('Player: '+ userObject.userName);
 
+		opponentName = userObject.userName;
+
 		$('#player2').attr("userId",userObject.userId);
 
 		$('#player2').append(p);
@@ -74,6 +80,8 @@ $("#start").on("click", function() {
 	userName = $("#userName").val().trim();
 
 	$("#userName").val('');
+
+	$("#gameStart").hide();
 
 	dbConnectedRef.on("value", function(snapshot) {
 
@@ -104,47 +112,50 @@ $("#start").on("click", function() {
 
 $("#player1").on("click","button",function() {
 
-	if ($(this).attr('id') == 'rock') {
+	if (userSelected == false) {
 
-		var dbRef = database.ref('/players' + '/'+userNode);
+		userSelected = true;
 
-		dbRef.update({ state: 'rock'});
+		if ($(this).attr('id') == 'rock') {
+
+			var dbRef = database.ref('/players' + '/'+userNode);
+
+			dbRef.update({ state: 'rock'});
+		}
+
+		else if ($(this).attr('id') == 'paper') {
+
+			var dbRef = database.ref('/players' + '/'+userNode);
+
+			dbRef.update({ state: 'paper'});
+		}
+
+		else if ($(this).attr('id') == 'scissors') {
+
+			var dbRef = database.ref('/players' + '/'+userNode);
+
+			dbRef.update({ state: 'scissors'});
+		}
+		($(this).addClass("selected"));
+
 	}
-
-	else if ($(this).attr('id') == 'paper') {
-
-		var dbRef = database.ref('/players' + '/'+userNode);
-
-		dbRef.update({ state: 'paper'});
-	}
-
-	else if ($(this).attr('id') == 'scissors') {
-
-		var dbRef = database.ref('/players' + '/'+userNode);
-
-		dbRef.update({ state: 'scissors'});
-	}
-
 
 });
 
-
 dbPlayerRef.on("child_removed", function(snapshot) {
 
-	console.log(snapshot.val());
+	//console.log(snapshot.val());
 
 	var userRemoveObj = snapshot.val();
 
 	$('div[userId='+ userRemoveObj.userId +']').html('');
 	$('div[userId='+ userRemoveObj.userId +']').removeAttr('userId');
 
-
 });
 
-var selection = [];
-
-
 dbPlayerRef.on("child_changed", function(snapshot) {
+
+	//console.log("child changed!");
 
 	var userChanged = snapshot.val();
 
@@ -155,11 +166,7 @@ dbPlayerRef.on("child_changed", function(snapshot) {
 
 	});
 
-	console.log(selection);
-
 	if (selection.length == 2) {
-
-		console.log("enough");
 
 			var playerId_0 = selection[0].userId;
 			var playerSelect_0 = selection[0].state;
@@ -173,36 +180,33 @@ dbPlayerRef.on("child_changed", function(snapshot) {
 
 				//playerId_0 is winner
 
-				$('div[userId='+ playerId_0 +']').append('<p> You are the winner </p>');
-
-				$('div[userId='+ playerId_1 +']').append('<p> You lose! </p>');
-
+				$("#result").html('<p>' +userName + ' selected ' + playerSelect_0 + '</p>');
+				$("#result").append('<p>' +opponentName + ' selected ' + playerSelect_1 + '</p>');
+				$("#result").append('<p> Winner is ' +userName + '</p>');
 
 			}
 
 			else if (result == 2) {
 				//playerId_1 is winner
 
-				$('div[userId='+ playerId_1 +']').append('<p> You are the winner </p>');
+				$("#result").html('<p>' +userName + ' selected ' + playerSelect_0 + '</p>');
+				$("#result").append('<p>' +opponentName + ' selected ' + playerSelect_1 + '</p>');
+				$("#result").append('<p> Winner is ' +opponentName + '</p>');
 
-				$('div[userId='+ playerId_0 +']').append('<p> You lose! </p>');
 			}
 			else {
 				//draw
+				$("#result").html('<p>' +userName + ' selected ' + playerSelect_0 + '</p>');
+				$("#result").append('<p>' +opponentName + ' selected ' + playerSelect_1 + '</p>');
+				$("#result").append('<p> Game is draw </p>');
 
-				$('div[userId='+ playerId_1 +']').append('<p> Draw </p>');
-
-				$('div[userId='+ playerId_0 +']').append('<p> Draw </p>');
 			}
 
-
-
+			setTimeout(initGame,5000);
 
 	}
 
 });
-
-
 
 function gameResult(player1, player2) {
 
@@ -218,7 +222,6 @@ function gameResult(player1, player2) {
 	else {
 		return 3;
 	}
-
 
 }
 
@@ -240,8 +243,6 @@ $("#send").on("click", function() {
 
 	}
 
-
-
 });
 
 dbChatRef.on("child_added", function(snapshot) {
@@ -249,7 +250,6 @@ dbChatRef.on("child_added", function(snapshot) {
 	var message = snapshot.val().message;
 
 	$("#chatArea").append('<p>' + message + '</p>');
-
 
 });
 
@@ -259,5 +259,53 @@ dbChatRef.on("child_removed", function(snapshot) {
 
 	$("#chatArea").html('');
 
+	initGame();
+
+});
+
+
+
+function initGame() {
+
+	userSelected = false;
+	$("#result").html('');
+
+	selection = [];
+
+	$("#player1").find("button").removeClass("selected");
+
+
+}
+
+dbPlayerRef.on("value", function(snapshot) {
+
+	 var players = snapshot.val();
+
+	 var playersArr;
+
+	 if (players != null) {
+
+
+	      // Getting an array of each key In the snapshot object
+	      playersArr = Object.keys(players);
+
+
+	    if (playersArr.length == 2){
+
+	     	$("#gameStart").hide();
+
+
+	    }
+	    else if ((playersArr.length != 2 ) && (userName == '')) {
+
+	    	$("#gameStart").show();
+
+
+
+	    }
+
+
+
+	 }
 
 });
